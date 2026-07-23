@@ -112,7 +112,9 @@ curl http://localhost:8384/healthz
 2. Скопируйте папку проекта в `/mnt/user/appdata/kinopoisk-provider`
 3. В Compose Manager добавьте новый стек, указав путь к папке
 4. Впишите ключи в `docker-compose.yml` так же, как описано в Быстром старте
-5. Запустите стек
+
+5. ![License](https://img.shields.io/badge/license-MIT-green.svg) ![Docker](https://img.shields.io/badge/docker-ready-blue.svg) ![Version](https://img.shields.io/badge/version-0.15.1-orange.svg) ![Plex](https://img.shields.io/badge/Plex-Custom%20Metadata%20Provider-e5a00d.svg)
+6. Запустите стек
 
 </details>
 
