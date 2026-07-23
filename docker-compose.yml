@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  # Опционально: sidecar-контейнер с Hysteria2-клиентом, отдаёт локальный
+  # SOCKS5-прокси для обхода блокировки TMDB. Сам собирает конфиг из
+  # ссылки HYSTERIA2_URL при старте — ничего вручную парсить не нужно.
+  # Если не нужно — удали этот сервис и переменные TMDB_PROXY_URL /
+  # PUBLIC_BASE_URL ниже, всё остальное продолжит работать.
+  hysteria-proxy:
+    build: ./hysteria-proxy
+    container_name: hysteria-proxy
+    restart: unless-stopped
+    environment:
+      # Впиши сюда свою ссылку целиком, как есть:
+      # hysteria2://AUTH@HOST:PORT/?insecure=1&sni=example.com#name
+      - HYSTERIA2_URL=hysteria2://ВСТАВЬ_СВОЮ_ССЫЛКУ_СЮДА
+
+  kinopoisk-provider:
+    build: .
+    container_name: kinopoisk-provider
+    restart: unless-stopped
+    ports:
+      - "8384:8000"
+    environment:
+      - POISKKINO_API_KEY=${POISKKINO_API_KEY}
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      # Опционально — см. комментарий у hysteria-proxy выше. Если сайдкар
+      # не используешь, просто убери эти две строки.
+      - TMDB_PROXY_URL=socks5://hysteria-proxy:1080
+      # ТОТ ЖЕ адрес, что ты вписывал в Plex (Settings -> Metadata Agents
+      # -> URL провайдера) — например http://192.168.2.2:8384. Нужен,
+      # чтобы Plex качал картинки TMDB через нас, а не напрямую.
+      - PUBLIC_BASE_URL=http://ТВОЙ_IP:8384
+    depends_on:
+      - hysteria-proxy
