@@ -109,7 +109,7 @@ curl http://localhost:8384/healthz
 <summary><b>🐧 Unraid</b></summary>
 
 1. Установите плагин **Compose Manager** из Community Applications (если ещё не установлен)
-2. Скопируйте папку проекта в `/mnt/user/appdata/kinopoisk-provider`
+2. Скопируйте папку проекта в `/mnt/user/appdata/kinopoisk-provider` ![Lint](https://github.com/Serka76/Kinopoisk-Provider/actions/workflows/lint.yml/badge.svg)
 3. В Compose Manager добавьте новый стек, указав путь к папке
 4. Впишите ключи в `docker-compose.yml` так же, как описано в Быстром старте
 
