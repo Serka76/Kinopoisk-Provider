@@ -1,0 +1,18 @@
+# Секреты
+docker-compose.yml
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Сборки/архивы
+*.zip
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
