@@ -1,0 +1,12 @@
+name: Bug Report
+description: Сообщить о проблеме в работе провайдера
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - {type: markdown, attributes: {value: "Спасибо, что нашли время сообщить о проблеме! Заполните поля ниже — это ускорит диагностику."}}
+  - {type: input, id: version, attributes: {label: "Версия провайдера", description: "Смотрите в логах контейнера, в ответе GET /healthz, или в названии провайдера в Plex", placeholder: "0.15.1"}, validations: {required: true}}
+  - {type: dropdown, id: platform, attributes: {label: "Платформа", options: ["Synology (Container Manager)", "Unraid", "QNAP (Container Station)", "Обычный Linux-сервер", "Docker Desktop (Windows/Mac)", "Другое"]}, validations: {required: true}}
+  - {type: textarea, id: what-happened, attributes: {label: "Что произошло", description: "Опишите проблему как можно подробнее", placeholder: "Например: рецензии не появляются на карточке фильма"}, validations: {required: true}}
+  - {type: textarea, id: expected, attributes: {label: "Что вы ожидали увидеть"}, validations: {required: false}}
+  - {type: textarea, id: logs, attributes: {label: "Логи контейнера", description: "Команда docker compose logs -f, вставьте фрагмент. Без API-ключей!", render: shell}, validations: {required: false}}
+  - {type: checkboxes, id: checklist, attributes: {label: "Чек-лист", options: [{label: "Я проверил(а) раздел FAQ в README", required: false}, {label: "Версия Plex Media Server 1.43.0 или новее", required: false}]}}
