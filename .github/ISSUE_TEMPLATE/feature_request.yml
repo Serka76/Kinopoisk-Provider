@@ -1,0 +1,9 @@
+name: Feature Request
+description: Предложить новую возможность или улучшение
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - {type: markdown, attributes: {value: "Спасибо за идею! Опишите, что хотелось бы видеть в провайдере."}}
+  - {type: textarea, id: problem, attributes: {label: "Какую проблему это решает", description: "Например: не хватает данных о сериалах, поддерживаются только фильмы"}, validations: {required: true}}
+  - {type: textarea, id: solution, attributes: {label: "Предлагаемое решение", description: "Как вы видите реализацию — достаточно описать желаемый результат"}, validations: {required: true}}
+  - {type: textarea, id: alternatives, attributes: {label: "Рассматривали ли альтернативы"}, validations: {required: false}}
