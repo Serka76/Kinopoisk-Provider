@@ -1,0 +1,4 @@
+blank_issues_enabled: false
+contact_links:
+  - {name: "FAQ / Troubleshooting", url: "https://github.com/Serka76/Kinopoisk-Provider#faq--troubleshooting", about: "Сначала загляните сюда — там разобраны частые проблемы"}
+  - {name: "История изменений", url: "https://github.com/Serka76/Kinopoisk-Provider/blob/main/CHANGELOG.md", about: "Возможно, проблема уже исправлена в последней версии"}
