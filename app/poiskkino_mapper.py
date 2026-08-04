@@ -148,6 +148,88 @@ def _build_extra_summary_block(details: dict, rating: dict, votes: dict) -> str:
     return "\n\n".join(parts)
 
 
+# Типы из sequelsAndPrequels, которые имеет смысл класть в коллекцию
+# кинобиблиотеки. Сериалы отсекаем: в библиотеке фильмов им не место,
+# а Plex всё равно не свяжет их с movie-элементами.
+SAGA_TYPES = {"movie", "cartoon", "anime"}
+
+
+def _franchise_name(names: list[str]) -> str | None:
+    """Общее имя киносерии по названиям её частей.
+
+    Берём самый длинный общий префикс. Это устойчивее, чем резать по
+    двоеточию: одинаково работает и для «Мстители: Финал», и для
+    «Терминатор 2», и для «Гарри Поттер и Тайная комната».
+
+    Главная ловушка — обрубки слов. Классика: «Чужой» и «Чужие» дают
+    общий префикс «Чуж». Поэтому префикс обязан заканчиваться на границе
+    слова, иначе обрезаем до предыдущего пробела, а если и его нет —
+    возвращаем None и коллекция просто не создаётся. Отсутствие
+    коллекции лучше, чем коллекция с именем «Чуж».
+    """
+    names = [n.strip() for n in names if n and n.strip()]
+    if len(names) < 2:
+        return None
+
+    prefix = names[0]
+    for n in names[1:]:
+        i = 0
+        while i < len(prefix) and i < len(n) and prefix[i].lower() == n[i].lower():
+            i += 1
+        prefix = prefix[:i]
+        if not prefix:
+            return None
+
+    # Граница слова: у каждой части либо название кончилось ровно здесь,
+    # либо следующий символ — не буква и не цифра.
+    def _ends_on_word_boundary(p: str) -> bool:
+        return all(len(n) == len(p) or not n[len(p)].isalnum() for n in names)
+
+    if not _ends_on_word_boundary(prefix):
+        prefix = prefix[:prefix.rfind(" ")] if " " in prefix else ""
+
+    # Хвостовой мусор: знаки препинания, союзы, номер части.
+    prefix = re.sub(r"[\s:.,;\-–—]+$", "", prefix)
+    prefix = re.sub(r"\s+(и|and|the|part|часть|эпизод)$", "", prefix, flags=re.IGNORECASE)
+    prefix = re.sub(r"\s+\d+$", "", prefix)
+    prefix = re.sub(r"[\s:.,;\-–—]+$", "", prefix).strip()
+
+    return prefix if len(prefix) >= 3 else None
+
+
+def _build_collections(details: dict) -> list[dict]:
+    """Коллекция фильма для группировки в Plex.
+
+    До 0.16.0 сюда шло поле `lists` — но это подборки самого Кинопоиска
+    («250 лучших фильмов», «Фильмы 2010-2019», «Драмы», «Сборы в США»),
+    а не киносерии. На библиотеке в 1700 фильмов они порождали больше
+    350 коллекций с техническими именами вроде `year2010-2019`,
+    `genredrama`, `box-usa-all-time`, среди которых настоящие франшизы
+    было уже не найти. Показательный пример: у «Мстителей» приходил
+    21 такой список и ни одного про вселенную Marvel.
+
+    Теперь берём `sequelsAndPrequels` — это реально части одной серии.
+    Имя коллекции считаем по общему префиксу названий (см.
+    _franchise_name), чтобы у всех частей вышел одинаковый тег и Plex
+    их сгруппировал.
+
+    Поле Collection не описано в схеме metadata официальной
+    спецификации PMS (там только Autotag, Country, Director, Filter,
+    Genre, Guid, Image, Media, Rating, Role, Sort, Writer) — то есть
+    остаётся best-effort. Но эмпирически Plex группирует по нему
+    корректно. Альтернатива, если поведение изменится: управлять
+    коллекциями напрямую через /library/collections.
+    """
+    saga = details.get("sequelsAndPrequels") or []
+    names = [details.get("name") or details.get("enName")]
+    for item in saga:
+        if item.get("type") in SAGA_TYPES:
+            names.append(item.get("name") or item.get("enName"))
+
+    name = _franchise_name([n for n in names if n])
+    return [{"tag": f"{name} (Коллекция)"}] if name else []
+
+
 async def build_full_metadata(movie_id: int, client: PoiskKinoClient, tmdb_client: TmdbClient | None = None) -> dict | None:
     """Собирает полный объект метаданных для одного фильма.
 
@@ -257,10 +339,10 @@ async def build_full_metadata(movie_id: int, client: PoiskKinoClient, tmdb_clien
         if name:
             similar.append({"tag": name})
 
-    # Простой способ подтянуть коллекции: lists — это готовые подборки
-    # Кинопоиска, в которые входит фильм (например "250 лучших фильмов").
-    # Plex сгруппирует фильмы с одинаковым тегом Collection автоматически.
-    collections = [{"tag": name} for name in (details.get("lists") or []) if name]
+    # v0.16.0: коллекции строятся из sequelsAndPrequels (реальные части
+    # серии), а не из lists (подборки сайта Кинопоиска). Подробности —
+    # в комментарии к _build_collections.
+    collections = _build_collections(details)
 
     def _safe_float(v):
         try:
