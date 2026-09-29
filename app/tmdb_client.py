@@ -1,9 +1,24 @@
 # -*- coding: utf-8 -*-
 """
-Клиент к TMDB (The Movie Database) — используется только для фото
-персон в фильмах НЕ российского производства (см. поле countries у
-фильма). Для российских фильмов фото по-прежнему берутся с Кинопоиска
-через poiskkino_client.py.
+Клиент к TMDB (The Movie Database).
+
+Изначально использовался только для фото персон в фильмах НЕ российского
+производства (см. поле countries у фильма) — для российских фильмов фото
+по-прежнему берутся с Кинопоиска через poiskkino_client.py.
+
+v0.17.0: добавлен ВТОРОЙ сценарий использования — аварийный фолбэк на
+случай, когда poiskkino.dev недоступен (исчерпана суточная квота 200
+запросов/день free-тарифа или лимит demo-пагинации, см. RuntimeError в
+poiskkino_client.py). При массовом добавлении новых фильмов в Plex
+(например, после докачки большой коллекции через Radarr) квота выжигается
+за несколько минут — до фикса это означало полностью пустые карточки
+(без описания/постера/каста) у всех фильмов, добавленных после этого
+момента, пока квота не сбросится на следующие сутки. Теперь вместо
+пустого результата используется TMDB (search_movie/movie_details) —
+получается урезанная карточка (нет отзывов и рейтинга Кинопоиска, TMDB
+их не знает), но не пустая. См. app/tmdb_fallback_mapper.py — там она
+собирается в формат Plex, и main.py — там решается, когда именно
+включать этот путь.
 
 Получить бесплатный API-ключ: https://www.themoviedb.org/settings/api
 (v3 auth, обычный API Key, не Read Access Token).
@@ -101,6 +116,71 @@ class TmdbClient:
                 return resp.content, content_type
         except httpx.HTTPError as e:
             print(f"[tmdb_client] fetch_image_bytes({url!r}) -> exception: {e}")
+            return None
+
+    def _auth_params_and_headers(self, extra_params: dict) -> tuple[dict, dict]:
+        """Общая логика авторизации для эндпоинтов фолбэка (v3 ключ в
+        query, v4 токен в заголовке) — та же, что в search_person_photo,
+        вынесена отдельно, т.к. нужна теперь в двух новых методах ниже."""
+        if self.api_key.startswith("eyJ"):
+            return extra_params, {"Authorization": f"Bearer {self.api_key}"}
+        return {**extra_params, "api_key": self.api_key}, {}
+
+    async def search_movie(self, title: str, year: int | None = None) -> list[dict]:
+        """GET /search/movie — фолбэк-поиск фильма, когда poiskkino.dev
+        недоступен (квота/лимит demo-пагинации). Возвращает сырые
+        результаты TMDB (SearchMovie[]), без сортировки — сортировку по
+        году делает вызывающий код (main.py), как и для основного поиска."""
+        if not self.api_key or not title:
+            return []
+        params, headers = self._auth_params_and_headers({
+            "query": title, "language": "ru-RU", "include_adult": "false",
+        })
+        if year:
+            params["year"] = year
+        try:
+            async with httpx.AsyncClient(**self._build_client_kwargs()) as client:
+                resp = await client.get(f"{BASE}/search/movie", params=params, headers=headers)
+                if resp.status_code != 200:
+                    print(f"[tmdb_client] search_movie({title!r}) -> HTTP {resp.status_code}: {resp.text[:200]}")
+                    return []
+                return (resp.json() or {}).get("results", [])
+        except httpx.HTTPError as e:
+            print(f"[tmdb_client] search_movie({title!r}) -> exception: {e}")
+            return []
+
+    async def movie_details(self, tmdb_id: int) -> dict | None:
+        """GET /movie/{id} с append_to_response=credits — полная карточка
+        фолбэк-фильма (описание/постер/жанры/каст) одним запросом.
+        Сначала пробуем ru-RU (описание на русском, если у TMDB есть
+        перевод), и если overview пустой — довытягиваем его отдельным
+        запросом на en-US, чтобы карточка не осталась без описания
+        вообще (у многих некрупных релизов русского перевода нет)."""
+        if not self.api_key:
+            return None
+        params, headers = self._auth_params_and_headers({
+            "language": "ru-RU", "append_to_response": "credits",
+        })
+        try:
+            async with httpx.AsyncClient(**self._build_client_kwargs()) as client:
+                resp = await client.get(f"{BASE}/movie/{tmdb_id}", params=params, headers=headers)
+                if resp.status_code != 200:
+                    print(f"[tmdb_client] movie_details({tmdb_id}) -> HTTP {resp.status_code}: {resp.text[:200]}")
+                    return None
+                details = resp.json()
+
+                if not details.get("overview"):
+                    en_params, en_headers = self._auth_params_and_headers({"language": "en-US"})
+                    resp_en = await client.get(f"{BASE}/movie/{tmdb_id}", params=en_params, headers=en_headers)
+                    if resp_en.status_code == 200:
+                        overview_en = (resp_en.json() or {}).get("overview")
+                        if overview_en:
+                            details["overview"] = overview_en
+                            print(f"[tmdb_client] movie_details({tmdb_id}): ru-RU overview пуст, взял en-US")
+
+                return details
+        except httpx.HTTPError as e:
+            print(f"[tmdb_client] movie_details({tmdb_id}) -> exception: {e}")
             return None
 
     async def enrich_photos(self, persons: list[dict]) -> dict[str, str]:
