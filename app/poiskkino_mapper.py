@@ -12,6 +12,7 @@ v0.7.0: добавлены голоса, факты/ошибки в фильме
 текстом в описание, т.к. у карточки Plex нет отдельных полей под них),
 похожие фильмы, полный каст без потерь на фильтрации профессии.
 """
+import os
 import re
 
 from app.poiskkino_client import PoiskKinoClient
@@ -35,18 +36,27 @@ PROFESSION_MAP = {
 
 CURRENCY_LABELS = {"world": "Мир", "russia": "Россия", "usa": "США"}
 
+# Сколько интересных фактов и сколько киноляпов показывать в описании.
+# v0.18.3: было жёстко 5 — у популярных фильмов Кинопоиск отдаёт до 25.
+FACTS_LIMIT = int(os.environ.get("FACTS_LIMIT", "10"))
+
 
 def _clean_html_text(text: str) -> str:
     """Кинопоиск отдаёт текст (рецензии, факты) с HTML-тегами (<b>, <i>,
-    <a href>, переносы и т.п.), а Plex просит markdown
-    (X-Plex-Text-Format=markdown в запросах). Конвертирую самые частые
-    теги, ссылки схлопываю до текста (без URL — они всё равно ведут на
-    сам Кинопоиск, не на что-то полезное в контексте Plex)."""
+    <a href>, переносы и т.п.). Теги убираем, ссылки схлопываем до текста
+    (без URL — они всё равно ведут на сам Кинопоиск, не на что-то
+    полезное в контексте Plex).
+
+    v0.18.3: раньше <b>/<i> превращались в markdown (**жирный**), потому
+    что Plex просит X-Plex-Text-Format=markdown в запросах метаданных. На
+    деле клиенты Plex эту разметку НЕ отрисовывают — в карточке видны
+    сами звёздочки (проверено на живом сервере). Поэтому markdown больше
+    не используем нигде: ни здесь, ни в блоке рейтингов и фактов ниже."""
     if not text:
         return text
     text = re.sub(r"<a\b[^>]*>(.*?)</a>", r"\1", text, flags=re.IGNORECASE | re.DOTALL)
-    text = re.sub(r"<b>(.*?)</b>", r"**\1**", text, flags=re.IGNORECASE | re.DOTALL)
-    text = re.sub(r"<i>(.*?)</i>", r"*\1*", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r"<b>(.*?)</b>", r"\1", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r"<i>(.*?)</i>", r"\1", text, flags=re.IGNORECASE | re.DOTALL)
     text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
     text = re.sub(r"<[^>]+>", "", text)  # любые прочие теги — просто убираем
     return text.strip()
@@ -106,20 +116,22 @@ def _format_currency(cv: dict | None) -> str | None:
 
 
 def _build_extra_summary_block(details: dict, rating: dict, votes: dict) -> str:
-    """Собирает markdown-блок с рейтингом+голосами, фактами и сборами —
-    Plex явно просит X-Plex-Text-Format=markdown в запросах метаданных,
-    так что используем **жирный** и списки. Раз бейдж рейтинга у Plex
-    для custom-провайдеров не рисуется (подтверждённое ограничение),
-    это единственное место, где сам балл вообще виден пользователю."""
+    """Собирает текстовый блок с рейтингом+голосами, фактами и сборами.
+    Раз бейдж рейтинга у Plex для custom-провайдеров не рисуется
+    (подтверждённое ограничение), это единственное место, где сам балл
+    вообще виден пользователю.
+
+    v0.18.3: без markdown — клиенты Plex его не отрисовывают и показывают
+    звёздочки как есть. Разделяем блоки пустыми строками и тире."""
     parts = []
 
     rating_bits = []
     if rating.get("kp"):
         count = votes.get("kp")
-        rating_bits.append(f"🎬 **КП:** {rating['kp']}" + (f" ({count} голосов)" if count else ""))
+        rating_bits.append(f"🎬 Кинопоиск: {rating['kp']}" + (f" ({count} голосов)" if count else ""))
     if rating.get("imdb"):
         count = votes.get("imdb")
-        rating_bits.append(f"🎥 **IMDb:** {rating['imdb']}" + (f" ({int(count)} голосов)" if count else ""))
+        rating_bits.append(f"🎥 IMDb: {rating['imdb']}" + (f" ({int(count)} голосов)" if count else ""))
     if rating_bits:
         parts.append("\n".join(rating_bits))
 
@@ -134,16 +146,16 @@ def _build_extra_summary_block(details: dict, rating: dict, votes: dict) -> str:
         if fee_str:
             money_bits.append(f"Сборы ({label}): {fee_str}")
     if money_bits:
-        parts.append("**Бюджет и сборы:** " + " · ".join(money_bits))
+        parts.append("💰 " + " · ".join(money_bits))
 
     facts = [f for f in (details.get("facts") or []) if f.get("value") and not f.get("spoiler")]
     if facts:
         trivia = [f for f in facts if (f.get("type") or "").upper() != "BLOOPER"]
         bloopers = [f for f in facts if (f.get("type") or "").upper() == "BLOOPER"]
         if trivia:
-            parts.append("**Знаете ли вы, что:**\n" + "\n".join(f"- {_clean_html_text(f['value'])}" for f in trivia[:5]))
+            parts.append("Знаете ли вы, что\n\n" + "\n\n".join(f"— {_clean_html_text(f['value'])}" for f in trivia[:FACTS_LIMIT]))
         if bloopers:
-            parts.append("**Ошибки в фильме:**\n" + "\n".join(f"- {_clean_html_text(f['value'])}" for f in bloopers[:5]))
+            parts.append("Ошибки в фильме\n\n" + "\n\n".join(f"— {_clean_html_text(f['value'])}" for f in bloopers[:FACTS_LIMIT]))
 
     return "\n\n".join(parts)
 
