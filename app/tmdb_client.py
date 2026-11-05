@@ -25,6 +25,9 @@ poiskkino_client.py). При массовом добавлении новых ф
 """
 import os
 import asyncio
+import ipaddress
+from urllib.parse import urlparse
+
 import httpx
 
 TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "").strip()
@@ -50,6 +53,42 @@ TIMEOUT = httpx.Timeout(10.0, connect=5.0)
 # только по IPv6) — используется только как fallback, если прокси не
 # настроен, вреда не приносит.
 IPV4_TRANSPORT = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+
+
+def person_photos_enabled() -> bool:
+    """Брать ли фото актёров с TMDB (иначе остаются фото с Кинопоиска).
+
+    v0.18.1. Plex НЕ скачивает картинки с приватных адресов: при попытке
+    забрать фото по ссылке вида http://192.168.x.x:8384/image-proxy?... он
+    обрывает запрос сам («operation aborted by pre-request callback») и
+    кружки актёров в карточке остаются пустыми. Проверено и на адресе
+    локальной сети, и на 127.0.0.1 — ведёт себя одинаково.
+
+    Поэтому: если PUBLIC_BASE_URL указывает на приватный адрес, фото с
+    TMDB не запрашиваем вовсе — пусть остаются кинопоисковские, они лежат
+    на публичном CDN и Plex их забирает без проблем (как и постеры). Это
+    ещё и экономит десятки запросов к TMDB на каждый фильм.
+
+    Если PUBLIC_BASE_URL не задан, поведение прежнее: отдаём ссылку прямо
+    на image.tmdb.org — за пределами России Plex её скачает сам.
+
+    Принудительно включить или выключить: TMDB_PERSON_PHOTOS=1 / 0.
+    """
+    override = os.environ.get("TMDB_PERSON_PHOTOS", "").strip().lower()
+    if override in ("0", "false", "no", "off"):
+        return False
+    if override in ("1", "true", "yes", "on"):
+        return True
+    if not PUBLIC_BASE_URL:
+        return True
+    host = (urlparse(PUBLIC_BASE_URL).hostname or "").strip("[]")
+    if not host or host == "localhost" or host.endswith(".local"):
+        return False
+    try:
+        addr = ipaddress.ip_address(host)
+    except ValueError:
+        return True   # доменное имя — считаем публичным
+    return not (addr.is_private or addr.is_loopback or addr.is_link_local)
 
 
 class TmdbClient:

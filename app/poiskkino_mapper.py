@@ -15,7 +15,7 @@ v0.7.0: добавлены голоса, факты/ошибки в фильме
 import re
 
 from app.poiskkino_client import PoiskKinoClient
-from app.tmdb_client import TmdbClient
+from app.tmdb_client import TmdbClient, person_photos_enabled
 
 PROVIDER_ID = "tv.plex.agents.custom.kinoplex.poiskkino"
 
@@ -252,11 +252,15 @@ async def build_full_metadata(movie_id: int, client: PoiskKinoClient, tmdb_clien
     # актуальнее), с откатом на кинопоисковское фото, если TMDB не нашёл.
     is_russian_production = any("росс" in c.lower() for c in countries)
     photo_overrides: dict[str, str] = {}
-    if not is_russian_production and tmdb_client is not None:
+    # v0.18.1: person_photos_enabled() — не ходим в TMDB за фото, если Plex
+    # всё равно не сможет их скачать (приватный PUBLIC_BASE_URL). Подробно —
+    # в комментарии к самой функции в tmdb_client.py.
+    use_tmdb_photos = person_photos_enabled()
+    if not is_russian_production and tmdb_client is not None and use_tmdb_photos:
         photo_overrides = await tmdb_client.enrich_photos(details.get("persons") or [])
     print(f"[poiskkino_mapper] movie {movie_id}: countries={countries}, "
           f"is_russian_production={is_russian_production}, "
-          f"tmdb_photos_found={len(photo_overrides)}")
+          f"use_tmdb_photos={use_tmdb_photos}, tmdb_photos_found={len(photo_overrides)}")
 
     rating = details.get("rating") or {}
     votes = details.get("votes") or {}
