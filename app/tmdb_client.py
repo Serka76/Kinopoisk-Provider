@@ -26,7 +26,7 @@ poiskkino_client.py). При массовом добавлении новых ф
 import os
 import asyncio
 import ipaddress
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 import httpx
 
@@ -39,6 +39,14 @@ TMDB_PROXY_URL = os.environ.get("TMDB_PROXY_URL", "").strip()
 # тоже, скорее всего, заблокирован (Plex ходит за картинками сам, в
 # обход нашего Hysteria2-прокси).
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").strip().rstrip("/")
+# v0.18.2. Публичный пересыльщик картинок — он сам скачивает файл с TMDB и
+# отдаёт его со своего публичного адреса. Нужен потому, что Plex не ходит за
+# картинками на приватные адреса (см. person_photos_enabled ниже), а значит
+# наш собственный /image-proxy на 192.168.x.x ему не годится ни при каких
+# настройках. С пересыльщиком фото с TMDB работают вообще без настройки:
+# ни прокси для картинок, ни публичного адреса у себя дома не требуется.
+# Пустое значение — выключить и вернуться к прежнему поведению.
+TMDB_IMAGE_MIRROR = os.environ.get("TMDB_IMAGE_MIRROR", "https://wsrv.nl/?url=").strip()
 BASE = "https://api.themoviedb.org/3"
 IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
@@ -53,6 +61,34 @@ TIMEOUT = httpx.Timeout(10.0, connect=5.0)
 # только по IPv6) — используется только как fallback, если прокси не
 # настроен, вреда не приносит.
 IPV4_TRANSPORT = httpx.AsyncHTTPTransport(local_address="0.0.0.0")
+
+
+def _base_url_is_private() -> bool:
+    """PUBLIC_BASE_URL указывает на адрес, недоступный Plex'у снаружи?"""
+    if not PUBLIC_BASE_URL:
+        return False
+    host = (urlparse(PUBLIC_BASE_URL).hostname or "").strip("[]")
+    if not host or host == "localhost" or host.endswith(".local"):
+        return True
+    try:
+        addr = ipaddress.ip_address(host)
+    except ValueError:
+        return False   # доменное имя — считаем публичным
+    return addr.is_private or addr.is_loopback or addr.is_link_local
+
+
+def person_photo_url(profile_path: str) -> str:
+    """Ссылка на фото персоны, которую Plex сможет скачать.
+
+    Порядок: публичный пересыльщик (по умолчанию) -> наш /image-proxy, если
+    провайдер доступен по публичному адресу -> прямая ссылка на TMDB.
+    """
+    direct = IMAGE_BASE + profile_path
+    if TMDB_IMAGE_MIRROR:
+        return TMDB_IMAGE_MIRROR + quote(direct.split("://", 1)[-1], safe="/")
+    if PUBLIC_BASE_URL and not _base_url_is_private():
+        return f"{PUBLIC_BASE_URL}/image-proxy?url={quote(direct, safe='')}"
+    return direct
 
 
 def person_photos_enabled() -> bool:
@@ -79,16 +115,9 @@ def person_photos_enabled() -> bool:
         return False
     if override in ("1", "true", "yes", "on"):
         return True
-    if not PUBLIC_BASE_URL:
-        return True
-    host = (urlparse(PUBLIC_BASE_URL).hostname or "").strip("[]")
-    if not host or host == "localhost" or host.endswith(".local"):
-        return False
-    try:
-        addr = ipaddress.ip_address(host)
-    except ValueError:
-        return True   # доменное имя — считаем публичным
-    return not (addr.is_private or addr.is_loopback or addr.is_link_local)
+    if TMDB_IMAGE_MIRROR:
+        return True   # пересыльщик публичный — Plex до него дотянется
+    return not _base_url_is_private()
 
 
 class TmdbClient:
@@ -122,14 +151,7 @@ class TmdbClient:
             results = (resp.json() or {}).get("results", [])
             for r in results:
                 if r.get("profile_path"):
-                    tmdb_url = IMAGE_BASE + r["profile_path"]
-                    if PUBLIC_BASE_URL:
-                        # Отдаём Plex'у ссылку на НАШ /image-proxy, а не
-                        # напрямую на TMDB — Plex сам качает картинки в
-                        # обход нашего прокси и упрётся в ту же блокировку.
-                        from urllib.parse import quote
-                        return f"{PUBLIC_BASE_URL}/image-proxy?url={quote(tmdb_url, safe='')}"
-                    return tmdb_url
+                    return person_photo_url(r["profile_path"])
             return None
         except httpx.HTTPError as e:
             print(f"[tmdb_client] search_person_photo({name!r}) -> exception: {e}")
