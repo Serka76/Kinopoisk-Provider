@@ -160,7 +160,12 @@ def build_tmdb_fallback_metadata(tmdb_id: int, details: dict) -> dict:
         "Producer": people["Producer"],
         "Image": images,
     }
+    # v0.18.0: tmdb:// отдаём всегда (здесь id известен точно — карточка
+    # и собрана по нему), imdb:// — если TMDB его знает. Зачем вообще
+    # нужен tmdb:// — см. комментарий в poiskkino_mapper.build_full_metadata.
+    guids = [{"id": f"tmdb://{tmdb_id}"}]
     if details.get("imdb_id"):
-        metadata["Guid"] = [{"id": f"imdb://{details['imdb_id']}"}]
+        guids.insert(0, {"id": f"imdb://{details['imdb_id']}"})
+    metadata["Guid"] = guids
 
     return {k: v for k, v in metadata.items() if v not in (None, "", [])}

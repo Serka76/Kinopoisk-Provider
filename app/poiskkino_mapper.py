@@ -320,7 +320,13 @@ async def build_full_metadata(movie_id: int, client: PoiskKinoClient, tmdb_clien
             images.append({"type": "background", "url": img["url"]})
 
     premiere = details.get("premiere") or {}
-    originally_available_at = premiere.get("russia") or premiere.get("world")
+    # v0.18.0: сначала МИРОВАЯ премьера, и только потом российская.
+    # premiere.russia у старых фильмов часто содержит дату ПОВТОРНОГО
+    # проката: у «Побега из Шоушенка» там 2019-10-24 при мировой
+    # премьере 1994-09-10. Из-за этого Plex показывал фильм как вышедший
+    # в 2019-м, ломалась сортировка по дате выхода, и Kometa относила
+    # фильм не к тому десятилетию в коллекциях.
+    originally_available_at = premiere.get("world") or premiere.get("russia")
     if originally_available_at:
         originally_available_at = str(originally_available_at)[:10]
 
@@ -382,9 +388,19 @@ async def build_full_metadata(movie_id: int, client: PoiskKinoClient, tmdb_clien
         "Collection": collections,  # неподтверждённое поле, best-effort
     }
 
+    # v0.18.0: отдаём не только imdb://, но и tmdb:// (есть в ответе API
+    # как externalId.tmdb). Без него Plex оставлял в карточке номер TMDb
+    # от ПРЕЖНЕЙ привязки — при Fix Match он не стирается сам, а внешние
+    # инструменты (Kometa и прочие) читают номер фильма именно из этих
+    # тегов, и фильм попадал в коллекции и плейлисты другого фильма.
     external_id = details.get("externalId") or {}
+    guids = []
     if external_id.get("imdb"):
-        metadata["Guid"] = [{"id": f"imdb://{external_id['imdb']}"}]
+        guids.append({"id": f"imdb://{external_id['imdb']}"})
+    if external_id.get("tmdb"):
+        guids.append({"id": f"tmdb://{external_id['tmdb']}"})
+    if guids:
+        metadata["Guid"] = guids
 
     result = {k: v for k, v in metadata.items() if v not in (None, "", [])}
     print(f"[poiskkino_mapper] movie {movie_id}: final Review count in payload = {len(result.get('Review', []))}, "

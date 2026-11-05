@@ -12,8 +12,11 @@ Server (PMS 1.43+).
 
 Порт по умолчанию 8000 (см. docker-compose.yml).
 """
+import os
 import time
 from typing import Optional
+
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
@@ -291,11 +294,30 @@ async def extras(rating_key: str):
     }
 
 
+# Хосты, картинки с которых /image-proxy согласен скачивать. v0.18.0:
+# до этого параметр url не проверялся вообще — эндпоинт скачал бы любой
+# адрес, который ему передали, включая адреса внутри домашней сети, и
+# отдал бы ответ наружу. Сам провайдер подставляет в url только TMDB
+# (см. tmdb_client.search_person_photo), так что ограничение ничего не
+# ломает. При необходимости список расширяется через IMAGE_PROXY_HOSTS
+# (хосты через запятую).
+ALLOWED_IMAGE_HOSTS = {
+    h.strip().lower()
+    for h in os.environ.get("IMAGE_PROXY_HOSTS", "image.tmdb.org").split(",")
+    if h.strip()
+}
+
+
 @app.get("/image-proxy")
 async def image_proxy(url: str):
     """Скачивает картинку (обычно с image.tmdb.org) через настроенный
     прокси и отдаёт её Plex'у от своего имени — см. комментарий в
     tmdb_client.py про то, зачем это нужно."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https") or (parsed.hostname or "").lower() not in ALLOWED_IMAGE_HOSTS:
+        print(f"[main] image_proxy: отказ, хост не разрешён — {url!r}")
+        raise HTTPException(status_code=400, detail="Этот хост не разрешён для /image-proxy")
+
     result = await tmdb_client.fetch_image_bytes(url)
     if not result:
         raise HTTPException(status_code=502, detail="Не удалось получить картинку через прокси")
