@@ -1,6 +1,6 @@
 # 🎬 Kinopoisk Custom Metadata Provider for Plex
 
-**Russian-language movie metadata for Plex Media Server, sourced from Kinopoisk** — titles, synopses, cast, ratings, Russian-language reviews, trivia and franchise collections. A replacement for the old `Kinopoisk.bundle`, which modern Plex can no longer run.
+**Russian-language movie metadata for Plex Media Server, sourced from Kinopoisk** — synopses, ratings, cast, reviews in Russian, trivia and franchise collections. A replacement for `Kinopoisk.bundle`, which Plex stopped loading in 1.43.0.
 
 By **Sergey Sychev** · [Русская версия](README.md) · MIT licensed
 
@@ -12,7 +12,7 @@ By **Sergey Sychev** · [Русская версия](README.md) · MIT licensed
 
 ## Why this exists
 
-Plex used to support third-party metadata agents (legacy plugins), and Kinopoisk had an excellent one: `Kinopoisk.bundle`. As of PMS **1.43.0** the legacy plugin engine is gone — those agents simply don't load any more. In its place Plex introduced **Custom Metadata Providers**: a plain HTTP service that Plex calls when it matches a movie or refreshes its metadata.
+Plex used to support third-party metadata agents (legacy plugins), and Kinopoisk had one: `Kinopoisk.bundle`. As of PMS **1.43.0** the legacy plugin engine is gone — those agents simply don't load any more. In its place Plex introduced **Custom Metadata Providers**: a plain HTTP service that Plex calls when it matches a movie or refreshes its metadata.
 
 This project is that service for Kinopoisk, packaged as a Docker container.
 
