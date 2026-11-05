@@ -1,0 +1,70 @@
+# Выпускает релиз сам, как только в main меняется номер версии в app/version.py.
+# Тег и описание берутся из репозитория: тег — v<версия>, описание — раздел
+# этой версии из CHANGELOG.md. Нужно потому, что отправить тег руками из
+# рабочей среды не всегда возможно, а релиз хочется одинаковый и без
+# забытых шагов.
+name: Релиз по версии
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - app/version.py
+      - CHANGELOG.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Узнать версию
+        id: v
+        run: |
+          VERSION=$(sed -n 's/^VERSION = "\(.*\)"$/\1/p' app/version.py)
+          if [ -z "$VERSION" ]; then echo "не нашёл VERSION в app/version.py"; exit 1; fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Версия в репозитории: $VERSION"
+
+      - name: Проверить, есть ли уже такой релиз
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v${{ steps.v.outputs.version }}" >/dev/null 2>&1; then
+            echo "Релиз v${{ steps.v.outputs.version }} уже есть — ничего не делаю"
+            echo "exists=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=no" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Собрать описание из CHANGELOG
+        if: steps.check.outputs.exists == 'no'
+        run: |
+          awk -v v="## [${{ steps.v.outputs.version }}]" '
+            index($0, v) == 1 { on = 1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "Раздел этой версии в CHANGELOG.md не найден." > notes.md
+          fi
+          head -5 notes.md
+
+      - name: Создать тег и релиз
+        if: steps.check.outputs.exists == 'no'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TITLE=$(head -3 notes.md | grep -m1 -oE '\*\*[^*]+\*\*' | tr -d '*' || true)
+          gh release create "v${{ steps.v.outputs.version }}" \
+            --target "${{ github.sha }}" \
+            --title "v${{ steps.v.outputs.version }}${TITLE:+ — $TITLE}" \
+            --notes-file notes.md
+          echo "Готово: релиз v${{ steps.v.outputs.version }}"
