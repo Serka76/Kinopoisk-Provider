@@ -60,19 +60,17 @@ cd Kinopoisk-Provider
 
 ```bash
 cp docker-compose.yml.example docker-compose.yml
+cp .env.example .env
 ```
 
-Put your key in `docker-compose.yml`:
+Put your keys in `.env` — it is listed in `.gitignore`, so it stays out of the repo:
 
-```yaml
-- POISKKINO_API_KEY=your_key_from_the_bot
+```ini
+POISKKINO_API_KEY=your_key_from_the_bot
+TMDB_API_KEY=your_tmdb_key
 ```
 
-Add a free [TMDB key](https://www.themoviedb.org/settings/api) while you're there — it gives you proper cast photos and keeps pages populated when the Kinopoisk daily quota runs out:
-
-```yaml
-- TMDB_API_KEY=your_tmdb_key
-```
+The [TMDB key](https://www.themoviedb.org/settings/api) is free and optional, but it gives you proper cast photos and keeps pages populated when the Kinopoisk daily quota runs out.
 
 ### 4. Run
 

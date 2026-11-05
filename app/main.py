@@ -54,6 +54,11 @@ else:
 # особенно важно (200 запросов/сутки, а на карточку уходит 2-3 запроса)
 _cache: dict[str, tuple[float, dict]] = {}
 CACHE_TTL_SECONDS = 60 * 60 * 12  # 12 часов
+# Ключ поиска складывается из названия, которое пришло в запросе, то есть
+# его задаёт клиент. Без потолка кэш растёт, пока не кончится память у
+# контейнера. 2000 записей — это заведомо больше любой домашней
+# библиотеки и при этом пара мегабайт.
+MAX_CACHE_ENTRIES = 2000
 
 
 def cache_get(key: str) -> Optional[dict]:
@@ -68,6 +73,11 @@ def cache_get(key: str) -> Optional[dict]:
 
 
 def cache_set(key: str, value: dict) -> None:
+    if len(_cache) >= MAX_CACHE_ENTRIES and key not in _cache:
+        for stale_key in [k for k, (ts, _) in _cache.items() if time.time() - ts > CACHE_TTL_SECONDS]:
+            _cache.pop(stale_key, None)
+        while len(_cache) >= MAX_CACHE_ENTRIES:
+            _cache.pop(next(iter(_cache)), None)   # dict хранит порядок вставки — уходит самая старая
     _cache[key] = (time.time(), value)
 
 
@@ -119,7 +129,10 @@ async def match(req: MatchRequest):
                 "release_date": f"{req.year}-01-01" if req.year else "",
             })]
         else:
-            results = [map_search_result({"id": int(movie_id), "name": req.title, "year": req.year})]
+            try:
+                results = [map_search_result({"id": int(movie_id), "name": req.title, "year": req.year})]
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Некорректный id в guid")
         return _match_container(results)
 
     if not req.title:
@@ -174,6 +187,10 @@ def _match_container(results: list[dict]) -> dict:
 async def metadata(rating_key: str):
     """Полные метаданные по одному фильму — вызывается при Refresh Metadata."""
     if is_tmdb_fallback_key(rating_key):
+        try:
+            tmdb_id_from_rating_key(rating_key)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Некорректный ratingKey")
         return await _metadata_tmdb_fallback(rating_key)
 
     try:
@@ -322,7 +339,17 @@ async def image_proxy(url: str):
     if not result:
         raise HTTPException(status_code=502, detail="Не удалось получить картинку через прокси")
     content, content_type = result
-    return Response(content=content, media_type=content_type)
+    # Content-Type приходит с чужого сервера. Отдавать его как есть — значит
+    # согласиться показать с нашего адреса что угодно, вплоть до HTML со
+    # скриптом. Пропускаем только картинки, остальное заворачиваем.
+    if not content_type.split(";", 1)[0].strip().lower().startswith("image/"):
+        print(f"[main] image_proxy: отказ, ответ не картинка ({content_type!r}) — {url!r}")
+        raise HTTPException(status_code=502, detail="По этому адресу вернулась не картинка")
+    return Response(
+        content=content,
+        media_type=content_type,
+        headers={"X-Content-Type-Options": "nosniff"},
+    )
 
 
 @app.get("/healthz")

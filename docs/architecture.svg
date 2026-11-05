@@ -1,52 +1,75 @@
-<svg viewBox="0 0 920 495" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+<svg viewBox="0 0 1040 580" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/></marker>
-    <marker id="arrowDashed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#9ca3af"/></marker>
-    <marker id="arrowAmber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e5a00d"/></marker>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8b949e"/></marker>
+    <marker id="aAmber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e5a00d"/></marker>
+    <marker id="aPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a371f7"/></marker>
   </defs>
-  <rect x="0" y="0" width="920" height="495" fill="#0d1117" rx="12"/>
-  <rect x="30" y="150" width="160" height="90" rx="10" fill="#e5a00d" opacity="0.15" stroke="#e5a00d" stroke-width="1.5"/>
-  <text x="110" y="188" text-anchor="middle" fill="#e5a00d" font-size="15" font-weight="700">Plex Media</text>
-  <text x="110" y="206" text-anchor="middle" fill="#e5a00d" font-size="15" font-weight="700">Server</text>
-  <text x="110" y="225" text-anchor="middle" fill="#8b949e" font-size="10.5">Custom Metadata Provider</text>
-  <rect x="300" y="90" width="300" height="270" rx="12" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
-  <text x="450" y="118" text-anchor="middle" fill="#c9d1d9" font-size="15" font-weight="700">kinopoisk-provider</text>
-  <text x="450" y="135" text-anchor="middle" fill="#8b949e" font-size="10.5">Docker-контейнер, FastAPI</text>
-  <rect x="320" y="150" width="260" height="34" rx="7" fill="#1f6feb" opacity="0.15" stroke="#1f6feb" stroke-width="1"/>
-  <text x="450" y="171" text-anchor="middle" fill="#79c0ff" font-size="12">main.py — эндпоинты /movie/...</text>
-  <rect x="320" y="194" width="260" height="34" rx="7" fill="#1f6feb" opacity="0.15" stroke="#1f6feb" stroke-width="1"/>
-  <text x="450" y="215" text-anchor="middle" fill="#79c0ff" font-size="12">poiskkino_mapper.py — карточка фильма</text>
-  <rect x="320" y="238" width="260" height="34" rx="7" fill="#1f6feb" opacity="0.15" stroke="#1f6feb" stroke-width="1"/>
-  <text x="450" y="259" text-anchor="middle" fill="#79c0ff" font-size="12">tmdb_client.py — фото актёров</text>
-  <rect x="320" y="282" width="260" height="34" rx="7" fill="#1f6feb" opacity="0.15" stroke="#1f6feb" stroke-width="1"/>
-  <text x="450" y="303" text-anchor="middle" fill="#79c0ff" font-size="12">ссылки на фото — через wsrv.nl</text>
-  <text x="450" y="340" text-anchor="middle" fill="#8b949e" font-size="10">порт 8384</text>
-  <rect x="700" y="60" width="190" height="90" rx="10" fill="#3fb950" opacity="0.15" stroke="#3fb950" stroke-width="1.5"/>
-  <text x="795" y="98" text-anchor="middle" fill="#3fb950" font-size="15" font-weight="700">poiskkino.dev</text>
-  <text x="795" y="116" text-anchor="middle" fill="#8b949e" font-size="10.5">Кинопоиск + IMDb</text>
-  <text x="795" y="131" text-anchor="middle" fill="#8b949e" font-size="10.5">агрегатор</text>
-  <rect x="700" y="330" width="190" height="90" rx="10" fill="#01b4e4" opacity="0.15" stroke="#01b4e4" stroke-width="1.5"/>
-  <text x="795" y="368" text-anchor="middle" fill="#01b4e4" font-size="15" font-weight="700">TMDB</text>
-  <text x="795" y="386" text-anchor="middle" fill="#8b949e" font-size="10.5">поиск фото актёров</text>
-  <text x="795" y="401" text-anchor="middle" fill="#8b949e" font-size="10.5">нероссийских фильмов</text>
-  <rect x="480" y="405" width="180" height="55" rx="9" fill="#161b22" stroke="#6b7280" stroke-width="1" stroke-dasharray="4 3"/>
-  <text x="570" y="428" text-anchor="middle" fill="#9ca3af" font-size="11" font-weight="600">hysteria-proxy</text>
-  <text x="570" y="443" text-anchor="middle" fill="#8b949e" font-size="9.5">sidecar, если TMDB заблокирован</text>
-  <path d="M190,180 L300,180" stroke="#6b7280" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  <text x="245" y="168" text-anchor="middle" fill="#8b949e" font-size="10">HTTP</text>
-  <path d="M600,120 L700,105" stroke="#6b7280" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  <text x="668" y="98" text-anchor="middle" fill="#8b949e" font-size="10">API-ключ</text>
-  <path d="M600,260 L700,375" stroke="#6b7280" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
-  <text x="690" y="300" text-anchor="middle" fill="#8b949e" font-size="10">TMDB-ключ (поиск)</text>
-  <path d="M450,360 L450,382 L570,382 L570,405" stroke="#9ca3af" stroke-width="1.3" fill="none" stroke-dasharray="4 3" marker-end="url(#arrowDashed)"/>
-  <path d="M660,432 L700,395" stroke="#9ca3af" stroke-width="1.3" fill="none" stroke-dasharray="4 3" marker-end="url(#arrowDashed)"/>
-  <text x="765" y="470" text-anchor="middle" fill="#8b949e" font-size="9.5">если TMDB заблокирован</text>
-  <rect x="30" y="330" width="190" height="78" rx="10" fill="#8957e5" opacity="0.15" stroke="#8957e5" stroke-width="1.5"/>
-  <text x="125" y="362" text-anchor="middle" fill="#a371f7" font-size="14" font-weight="700">wsrv.nl</text>
-  <text x="125" y="380" text-anchor="middle" fill="#8b949e" font-size="10.5">публичный пересыльщик</text>
-  <text x="125" y="395" text-anchor="middle" fill="#8b949e" font-size="10.5">картинок</text>
-  <path d="M110,240 L110,330" stroke="#e5a00d" stroke-width="1.3" fill="none" stroke-dasharray="3 3" marker-end="url(#arrowAmber)"/>
-  <text x="60" y="290" text-anchor="middle" fill="#e5a00d" font-size="9.5">качает фото</text>
-  <path d="M220,360 C 420,360 640,380 700,380" stroke="#8957e5" stroke-width="1.3" fill="none" stroke-dasharray="3 3" marker-end="url(#arrowDashed)"/>
-  <text x="430" y="376" text-anchor="middle" fill="#a371f7" font-size="9.5">берёт картинку с TMDB (публично, без прокси)</text>
+
+  <rect x="0" y="0" width="1040" height="580" fill="#0d1117" rx="12"/>
+  <text x="40" y="52" fill="#e6edf3" font-size="22" font-weight="700">Как это устроено</text>
+  <line x1="40" y1="68" x2="1000" y2="68" stroke="#21262d" stroke-width="1"/>
+
+  <!-- Plex -->
+  <rect x="40" y="150" width="180" height="100" rx="10" fill="#e5a00d" fill-opacity="0.12" stroke="#e5a00d" stroke-width="1.5"/>
+  <text x="130" y="190" text-anchor="middle" fill="#e5a00d" font-size="15" font-weight="700">Plex Media</text>
+  <text x="130" y="209" text-anchor="middle" fill="#e5a00d" font-size="15" font-weight="700">Server</text>
+  <text x="130" y="231" text-anchor="middle" fill="#8b949e" font-size="10.5">Custom Metadata Provider</text>
+
+  <!-- Провайдер -->
+  <rect x="280" y="70" width="320" height="300" rx="12" fill="#161b22" stroke="#30363d" stroke-width="1.5"/>
+  <text x="440" y="105" text-anchor="middle" fill="#e6edf3" font-size="16" font-weight="700">kinopoisk-provider</text>
+  <text x="440" y="125" text-anchor="middle" fill="#8b949e" font-size="10.5">Docker-контейнер, FastAPI</text>
+
+  <rect x="298" y="146" width="284" height="38" rx="8" fill="#132337" stroke="#1f6feb" stroke-width="1"/>
+  <text x="440" y="170" text-anchor="middle" fill="#79c0ff" font-size="11.5">main.py — эндпоинты /movie/…</text>
+  <rect x="298" y="192" width="284" height="38" rx="8" fill="#132337" stroke="#1f6feb" stroke-width="1"/>
+  <text x="440" y="216" text-anchor="middle" fill="#79c0ff" font-size="11.5">poiskkino_mapper.py — карточка фильма</text>
+  <rect x="298" y="238" width="284" height="38" rx="8" fill="#132337" stroke="#1f6feb" stroke-width="1"/>
+  <text x="440" y="262" text-anchor="middle" fill="#79c0ff" font-size="11.5">tmdb_client.py — фото актёров</text>
+  <rect x="298" y="284" width="284" height="38" rx="8" fill="#132337" stroke="#1f6feb" stroke-width="1"/>
+  <text x="440" y="308" text-anchor="middle" fill="#79c0ff" font-size="11.5">ссылки на фото → wsrv.nl</text>
+  <text x="440" y="351" text-anchor="middle" fill="#6e7681" font-size="10.5">порт 8384</text>
+
+  <!-- poiskkino.dev -->
+  <rect x="830" y="90" width="180" height="86" rx="10" fill="#3fb950" fill-opacity="0.12" stroke="#3fb950" stroke-width="1.5"/>
+  <text x="920" y="124" text-anchor="middle" fill="#3fb950" font-size="15" font-weight="700">poiskkino.dev</text>
+  <text x="920" y="145" text-anchor="middle" fill="#8b949e" font-size="10.5">описание, отзывы, факты,</text>
+  <text x="920" y="161" text-anchor="middle" fill="#8b949e" font-size="10.5">рейтинг Кинопоиска</text>
+
+  <!-- TMDB -->
+  <rect x="830" y="285" width="180" height="90" rx="10" fill="#4dc9f0" fill-opacity="0.12" stroke="#4dc9f0" stroke-width="1.5"/>
+  <text x="920" y="319" text-anchor="middle" fill="#4dc9f0" font-size="15" font-weight="700">TMDB</text>
+  <text x="920" y="340" text-anchor="middle" fill="#8b949e" font-size="10.5">фото актёров и запасная</text>
+  <text x="920" y="356" text-anchor="middle" fill="#8b949e" font-size="10.5">карточка без квоты</text>
+
+  <!-- hysteria-proxy -->
+  <rect x="665" y="302" width="130" height="56" rx="8" fill="#0d1117" stroke="#484f58" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <text x="730" y="327" text-anchor="middle" fill="#8b949e" font-size="11" font-weight="600">hysteria-proxy</text>
+  <text x="730" y="344" text-anchor="middle" fill="#6e7681" font-size="10">сайдкар</text>
+  <text x="700" y="378" text-anchor="middle" fill="#6e7681" font-size="10">только если TMDB заблокирован</text>
+
+  <!-- wsrv.nl -->
+  <rect x="40" y="430" width="180" height="96" rx="10" fill="#a371f7" fill-opacity="0.12" stroke="#a371f7" stroke-width="1.5"/>
+  <text x="130" y="468" text-anchor="middle" fill="#a371f7" font-size="15" font-weight="700">wsrv.nl</text>
+  <text x="130" y="489" text-anchor="middle" fill="#8b949e" font-size="10.5">публичный пересыльщик</text>
+  <text x="130" y="505" text-anchor="middle" fill="#8b949e" font-size="10.5">картинок</text>
+
+  <!-- Стрелки -->
+  <line x1="220" y1="200" x2="272" y2="200" stroke="#8b949e" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="246" y="190" text-anchor="middle" fill="#8b949e" font-size="10.5">HTTP</text>
+
+  <line x1="600" y1="133" x2="822" y2="133" stroke="#8b949e" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="711" y="123" text-anchor="middle" fill="#8b949e" font-size="10.5">API-ключ</text>
+
+  <line x1="600" y1="330" x2="657" y2="330" stroke="#8b949e" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="795" y1="330" x2="822" y2="330" stroke="#8b949e" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="730" y="293" text-anchor="middle" fill="#8b949e" font-size="10.5">TMDB-ключ</text>
+
+  <line x1="130" y1="250" x2="130" y2="422" stroke="#e5a00d" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#aAmber)"/>
+  <text x="142" y="344" fill="#e5a00d" font-size="10.5">качает фото актёров</text>
+
+  <path d="M220,478 H900 V383" fill="none" stroke="#a371f7" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#aPurple)"/>
+  <text x="450" y="468" text-anchor="middle" fill="#a371f7" font-size="10.5">берёт картинку с image.tmdb.org — публично, без прокси</text>
+
+  <text x="40" y="556" fill="#6e7681" font-size="10.5">Сплошные стрелки — запросы провайдера. Пунктир — Plex забирает картинки сам, мимо провайдера.</text>
 </svg>
